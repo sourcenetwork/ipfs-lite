@@ -18,7 +18,7 @@ import (
 	"github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	chunker "github.com/ipfs/go-ipfs-chunker"
-	"github.com/ipfs/go-ipfs-exchange-interface"
+	exchange "github.com/ipfs/go-ipfs-exchange-interface"
 	offline "github.com/ipfs/go-ipfs-exchange-offline"
 	provider "github.com/ipfs/go-ipfs-provider"
 	"github.com/ipfs/go-ipfs-provider/queue"
@@ -88,6 +88,7 @@ type Peer struct {
 func New(
 	ctx context.Context,
 	store datastore.Batching,
+	bstore blockstore.Blockstore,
 	host host.Host,
 	dht routing.Routing,
 	cfg *Config,
@@ -107,9 +108,14 @@ func New(
 		store: store,
 	}
 
-	err := p.setupBlockstore()
-	if err != nil {
-		return nil, err
+	var err error
+	if bstore != nil { // manually set the blockstore if given
+		p.bstore = bstore
+	} else {
+		err = p.setupBlockstore()
+		if err != nil {
+			return nil, err
+		}
 	}
 	err = p.setupBlockService()
 	if err != nil {
